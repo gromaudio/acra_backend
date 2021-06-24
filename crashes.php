@@ -301,6 +301,7 @@ function display_crashes($status) {
 	$columns = array('id', /* 'status', */ 'MAX(added_date) as last_seen', 'COUNT(issue_id) as nb_errors', 'issue_id',
 		'MAX(app_version_code) as version_code', /*'MAX(app_version_name) as version_name', 'package_name', */
 		// 'phone_model', 'android_version', 'brand', 'product',
+		'custom_data',
 		'stack_trace');
 
 	$sel = "status = ?";
@@ -371,6 +372,14 @@ function display_crashes($status) {
 					$k = "exception";
 				}
 
+				if ($k == "custom_data") {
+					echo "<th>serial</th>\n";
+					echo "<th>build</th>\n";
+				}
+
+				if ($k == "version_code" || $k == "issue_id" || $k == "custom_data")
+					continue;
+
 				echo "<th>$k</th>\n";
 			}
 			$first = 0;
@@ -379,30 +388,50 @@ function display_crashes($status) {
 
 		echo '<tr id="id_'.$tab['id'].'" onclick="javascript:document.location=\'./report.php?issue_id='.$tab['issue_id'].'\';">'."\n";
 		foreach ($tab as $k => $v) {
+			if ($k == "version_code" || $k == "issue_id")
+				continue;
 			if ($k == "stack_trace") {
 				$lines = explode("\n", $v);
 				//$idx = array_find('Caused by:', $lines);
 				//$v = $lines[$idx];
-				if (array_find(": ", $lines) === FALSE && array_find(PACKAGE, $lines) === FALSE) {
-					$value = $lines[0];
-				} else {
-					$value = "";
+				$value = "<div style='height:250px; overflow:hidden'>";
+				/*if (array_find(": ", $lines) === FALSE && array_find(PACKAGE, $lines) === FALSE) {
+					$value .= $lines[0];
+				} else {*/
+					$value .= "";
 					foreach ($lines as $id => $line) {
-						if (strpos($line, ": ") !== FALSE || strpos($line, PACKAGE) !== FALSE
-							|| strpos($line, "Error") !== FALSE || strpos($line, "Exception") !== FALSE) {
+						/*if (strpos($line, ": ") !== FALSE || strpos($line, PACKAGE) !== FALSE
+							|| strpos($line, "Error") !== FALSE || strpos($line, "Exception") !== FALSE) {*/
 							$value .= $line . "<br />";
-						}
+						//}
 					}
-				}
+				//}
 
 				if ($tab['issue_id'] == "") {
 					mysql_query(create_mysql_update(array('issue_id' => md5($value)), "id = ?", array($tab['id'])));
 				}
+
+				$value .= "</div>";
 			} else if ($k == "last_seen") {
 				$value = date("d/M/Y G:i:s", $v);
 			} else if ($k == "status") {
 				$value = status_name($tab['status']);
-			} else if ($k == "version_code") {
+			} else if ($k == "custom_data") {
+				$lines = explode("\n", $v);
+				if (count($lines) == 0) {
+					echo "<td$style>none</td>\n";
+					echo "<td$style>none</td>\n";
+				}  else if(count($lines) >= 2) {
+					$v = explode("=", $lines[0])[1];
+					echo "<td$style>$v</td>\n";
+					$v = explode("=", $lines[1])[1];
+					echo "<td$style>$v</td>\n";
+				}
+				
+				continue;
+			}
+				
+			 /*else if ($k == "version_code") {
 				$c = array('app_version_code', 'count(app_version_code) as nb');
 				$sl = "issue_id = '?'";
 				$slA = array($tab[issue_id]);
@@ -427,7 +456,7 @@ function display_crashes($status) {
 				    	$value .= '<b title="'.$t[nb].' occurrences">'.$t[app_version_code]."</b> (".sprintf("%.1f%%", 100.0*$t[nb]/$tab[nb_errors]).")<br />";
         				}
                                 }
-
+*/
 				// $js .= "\t ];\n"
 				// 	."	var plot_".$tab[issue_id]." = jQuery.jqplot ('chartdiv_".$tab[issue_id]."', [data], \n"
 				// 	."	      { \n"
@@ -442,8 +471,8 @@ function display_crashes($status) {
 				// 	."      });\n";
 
 				// $value .= '<div id="chartdiv_'.$tab[issue_id].'" style="height:200px;width:200px; "></div>';
-				$value .= '<script>'.$js.'</script>';
-			} else if ($k == "TODO") {
+				//$value .= '<script>'.$js.'</script>';
+			/*}*/ else if ($k == "TODO") {
 
 			} else {
 				$value = $v;

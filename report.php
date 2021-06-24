@@ -537,6 +537,7 @@ var chart4 = new Highcharts.Chart({
 // 	showReport($tab);
 // } -->
 
+
  <?php
          
 # print_r($tab);
