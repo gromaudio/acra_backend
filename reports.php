@@ -8,7 +8,8 @@ include "alphaID.php";
 
 // Search form
 echo '<form method="get" action="reports.php">'."\n";
-echo 'Filter by phone_model: <input type="text" name="q" value="'.$_GET[q].'" /> <input type="submit" value="Search" />'."\n";
+echo 'Filter by serial: <input type="text" name="q" value="'.$_GET[q].'" /> <input type="submit" value="Search" />'."\n";
+echo "<input type='hidden' name='app' value='" . $_GET['app'] . "' />";
 echo "</form>\n";
 
 if(!isset($_SESSION)) { 
@@ -45,7 +46,7 @@ if (!isset($_GET[status])) {
 }
 
 if ($_GET[status] == STATE_NEW) {
-	display_versions($_GET[app]);
+	//display_versions($_GET[app]);
 }
 display_crashes($status, $_GET[app]);
 mysqli_close($mysql);

@@ -38,7 +38,7 @@ $object['added_date'] = time();
 $object['issue_id'] = issue_id($object['stack_trace'], $object['package_name']);
 
 if (isset($object['user_ip'])) {
-  if(!(trim($object['user_ip']) === ''))
+  if(!(trim($object['user_ip']) === '') && $object['package_name'] != "com.gromaudio.vlineservice")
     $object['appid'] = $object['user_ip'];
   unset($object['user_ip']); 
 }

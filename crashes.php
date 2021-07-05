@@ -294,11 +294,38 @@ function display_crashes_vs_date() {
 	// echo "});</script>";
 }
 
+function affectedVersionsAndUsers($issue_id) {
+	global $mysql;
+	global $_GET, $package;
+
+	$columns = array('custom_data');
+
+	$sel = "issue_id = ?";
+	$selA = array($issue_id);
+	$sql = create_mysql_select($columns, $sel, $selA, "", "issue_id");
+	$res = mysqli_query($mysql, "select custom_data from crashes where issue_id='" . $issue_id . "'");
+
+	$result = array();
+	while ($row = mysqli_fetch_assoc($res)) {
+		$lines = explode("\n", $row['custom_data']);
+		if (count($lines) >= 2) {
+			$v = explode("=", $lines[0])[1];
+			$result['users'][$v] = 1;
+			$v = explode("=", $lines[1])[1];
+			$result['versions'][$v] = 1;
+		}
+	}
+
+	return $result;
+}
+
 function display_crashes($status) {
 	global $mysql;
 	global $_GET, $package;
 
-	$columns = array('id', /* 'status', */ 'MAX(added_date) as last_seen', 'COUNT(issue_id) as nb_errors', 'issue_id',
+	$columns = array('id', /* 'status', */ 'MAX(added_date) as last_seen', 'COUNT(issue_id) as nb_errors', 
+		'COUNT(DISTINCT (installation_id)) as affected_users',
+		'issue_id',
 		'MAX(app_version_code) as version_code', /*'MAX(app_version_name) as version_name', 'package_name', */
 		// 'phone_model', 'android_version', 'brand', 'product',
 		'custom_data',
@@ -331,10 +358,10 @@ function display_crashes($status) {
 		$args = explode(" ", $_GET[q]);
 		foreach($args as $arg) {
 			if ($arg[0] == "-") {
-				$sel .= " AND phone_model NOT LIKE '%?%'";
+				$sel .= " AND custom_data NOT LIKE '%?%'";
 				$selA[] = substr($arg, 1);
 			} else {
-				$sel .= " AND phone_model LIKE '%?%'";
+				$sel .= " AND custom_data LIKE '%?%'";
 				$selA[] = $arg;
 			}
 		}
@@ -358,7 +385,11 @@ function display_crashes($status) {
 		return;
 	}
 
-	echo "<h1>".status_name($status)." reports (".mysqli_num_rows($res).")</h1>\n";
+	echo "<h1 style='display: inline; margin-top: 40px'>".status_name($status)." reports (".mysqli_num_rows($res).")</h1>";
+
+	echo "<button style='display: inline; float: right; height: 40px; padding: 10px;' onclick=\"location.href='group.php?appid=$_GET[app]'\" type='button'>
+         PROCESS</button>";
+
 	if ($_GET[q] != '') {
 		echo "<p>Filtered with phone_model matching '$_GET[q]'</p>\n";
 	}
@@ -373,11 +404,11 @@ function display_crashes($status) {
 				}
 
 				if ($k == "custom_data") {
-					echo "<th>serial</th>\n";
+					//echo "<th>serial</th>\n";
 					echo "<th>build</th>\n";
 				}
 
-				if ($k == "version_code" || $k == "issue_id" || $k == "custom_data")
+				if ($k == "version_code" || $k == "issue_id" || $k == "custom_data" || $k == "id" || $k == "affected_users")
 					continue;
 
 				echo "<th>$k</th>\n";
@@ -388,7 +419,7 @@ function display_crashes($status) {
 
 		echo '<tr id="id_'.$tab['id'].'" onclick="javascript:document.location=\'./report.php?issue_id='.$tab['issue_id'].'\';">'."\n";
 		foreach ($tab as $k => $v) {
-			if ($k == "version_code" || $k == "issue_id")
+			if ($k == "version_code" || $k == "issue_id" || $k == "id" || $k == "affected_users")
 				continue;
 			if ($k == "stack_trace") {
 				$lines = explode("\n", $v);
@@ -420,15 +451,18 @@ function display_crashes($status) {
 				$lines = explode("\n", $v);
 				if (count($lines) == 0) {
 					echo "<td$style>none</td>\n";
-					echo "<td$style>none</td>\n";
+					//echo "<td$style>none</td>\n";
 				}  else if(count($lines) >= 2) {
-					$v = explode("=", $lines[0])[1];
-					echo "<td$style>$v</td>\n";
+					//$v = explode("=", $lines[0])[1];
+					//echo "<td$style>$v</td>\n";
 					$v = explode("=", $lines[1])[1];
 					echo "<td$style>$v</td>\n";
 				}
 				
 				continue;
+			} elseif ($k == "nb_errors") {
+				$value = $v . " (" . $tab["affected_users"] . " users)";
+				# code...
 			}
 				
 			 /*else if ($k == "version_code") {

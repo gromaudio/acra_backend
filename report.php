@@ -10,6 +10,14 @@ if (!isset($_GET[issue_id])) {
 	exit;
 }
 
+echo '
+<head>
+<script src="jquery-3.6.0.min.js"></script>
+<script src="pagination.js"></script>
+<link rel="stylesheet" href="pagination.css">
+</head>
+';
+
 function showReport($tab) {
 	echo "<h1>Report #".$tab['id']."</h1>\n";
 	echo '<div style="margin: 45px;">'."\n";
@@ -75,14 +83,14 @@ function showLastOccurred($tab) {
 
 function getNumberOfCrashes() {
 	global $mysql;
-	$sql_overall_crashnr = create_mysql_select(null, "issue_id = '?'", array($_GET[issue_id]));
+	$sql_overall_crashnr = create_mysql_select(array('id'), "issue_id = '?'", array($_GET[issue_id]));
 	$res_overall_crashnr = mysqli_query($mysql,$sql_overall_crashnr);
 	return mysqli_num_rows($res_overall_crashnr);
 }
 
 function showNumberOfCrashes() {
         global $mysql;	
-	$sql_overall_crashnr = create_mysql_select(null, "issue_id = '?'", array($_GET[issue_id]));
+	$sql_overall_crashnr = create_mysql_select(array('id'), "issue_id = '?'", array($_GET[issue_id]));
 	$res_overall_crashnr = mysqli_query($mysql, $sql_overall_crashnr);
 	$rows = mysqli_num_rows($res_overall_crashnr);
 	if ($rows == 0) {
@@ -202,10 +210,15 @@ echo '<a class="button" href="javascript:setStatusAndGo(\''.$_GET['issue_id'].'\
 echo "</div>\n";
 
 // Display reports
-$sql = create_mysql_select(null, "issue_id = '?'", array($_GET[issue_id]));
-$sql .= " LIMIT 0, 100";
+$c = array('status', 'count(issue_id) as nb_errors', 'added_date', 'stack_trace');
+$sl = "issue_id = '?'";
+$slA = array($_GET[issue_id]);
+
+$sql = create_mysql_select($c, $sl, $slA, "id desc", 'issue_id');
+
+//$sql = create_mysql_select(null, "issue_id = '?'", array($_GET[issue_id]));
+$sql .= " LIMIT 0, 5";
 $res = mysqli_query($mysql, $sql);
-$rows = mysqli_num_rows($res);
 
 if (!$res) {
 	log_to_file("Unable to query: $sql");
@@ -213,13 +226,11 @@ if (!$res) {
 	return;
 }
 
+$rows = mysqli_num_rows($res);
+
 ?>
 <br />
-<script>
-    $(function() {
-        $( "#tabs" ).tabs();
-    });
-</script>
+
 
 <div class="leftreportcolumn">
 	<?php
@@ -227,15 +238,26 @@ if (!$res) {
 	  	showStatus($tab1);
 	  	showLastOccurred($tab1);
 	  	showNumberOfCrashes();
+
+		$array = affectedVersionsAndUsers($_GET[issue_id]);
+		echo "<br/>";
+		echo "<b>Affected users: </b>" . count($array['users']);
+		echo "<br/>";
+		echo "<div style='word-break:break-all;'>(" . implode(",", array_keys($array['users'])) . ")<br/></div>";
+		echo "<b>Affected versions</b></br>";
+		foreach($array['versions'] as $version => $v)
+			echo "$version<br/>";
+		//var_dump($array);
+		
 	?>
 </div>
 <div class="rightreportcolumn">
 	<div id="tabs">
-		<ul>
+	<!-- 	<ul>
 	        <li><a href="#tabs-1">Stacktrace</a></li>
 	        <li><a href="#tabs-2">Affected Versions</a></li>
 	        <li><a href="#tabs-3">Statistics</a></li>
-	    </ul>
+	    </ul> -->
 
 	    <div id="tabs-1">
 		  	<p><?php
@@ -253,14 +275,15 @@ if (!$res) {
 
 
 	    <div id="tabs-2">
-		  	<table>
+		  	<!-- <table>
 				<tr>
 					<th>Versioncode (Version Name)</th>
 					<th>Crashes</th>
-				</tr>
+				</tr> -->
 	
 			<?php
-				$sql_versions = "SELECT DISTINCT `app_version_code`, `app_version_name` FROM `crashes` WHERE `issue_id` = '" . $_GET[issue_id] . "'";
+				/*$sql_versions = "SELECT DISTINCT `app_version_code`, `app_version_name` FROM `crashes` WHERE `issue_id` = '" . $_GET[issue_id] . "'";
+
 				$res_versions = mysqli_query($mysql,$sql_versions);
 
 			  	while ($tab3 = mysqli_fetch_assoc($res_versions)) {
@@ -270,235 +293,24 @@ if (!$res) {
 			  		$crashes = mysqli_num_rows($res_crashes);
 			  		echo "<td>$crashes</td>
 					</tr>";
-			  	}
+			  	}*/
 		  	?>
-		  	</table>
+		  	<!-- </table> -->
 	    </div>
 
 
-	    <div id="tabs-3">
-			<p>
-			<div id="charts">
-				<div id="chartdiv_versions" style="width: 450px; height: 300px; "></div>
-				<div id="chartdiv_androidversions" style="width: 450px; height: 300px; "></div>
-				<div id="chartdiv_models" style="width: 450px; height: 300px; "></div>
-				<div id="chartdiv_orientations" style="width: 450px; height: 300px; "></div>
-				<div id="clear_chartdivs"></div>
-			</div>
-			</p>
-	    </div>
+	   
+<br/>
+	    <div id="demo"></div>
+<br/>
+	    <div id="cont"></div>
+
+	    <br/>
 
 	</div>
 </div>
 
-<script>
-$(document).ready(function(){
-	// Radialize the colors
-    Highcharts.getOptions().colors = $.map(Highcharts.getOptions().colors, function(color) {
-        return {
-            radialGradient: { cx: 0.5, cy: 0.3, r: 0.7 },
-            stops: [
-                [0, color],
-                [1, Highcharts.Color(color).brighten(-0.3).get('rgb')] // darken
-            ]
-        };
-    });
 
-	$.jqplot.config.enablePlugins = false;
-
-	$("#tabs").tabs();
-
-	// Build the chart
-    var chart1 = new Highcharts.Chart({
-        chart: {
-            renderTo: 'chartdiv_versions',
-            plotBackgroundColor: null,
-            plotBorderWidth: null,
-            plotShadow: false
-        },
-        credits: {
-            enabled: false
-        },
-        title: {
-            text: 'App Versions'
-        },
-        tooltip: {
-            pointFormat: '{series.name}: <b>{point.percentage}%</b>',
-            percentageDecimals: 1
-        },
-        plotOptions: {
-            pie: {
-                allowPointSelect: true,
-                cursor: 'pointer',
-                dataLabels: {
-                    enabled: true,
-                    color: '#000000',
-                    connectorColor: '#000000',
-                    formatter: function() {
-                        return '<b>'+ this.point.name +'</b>: '+ this.y;
-                    }
-                }
-            }
-        },
-        series: [{
-            type: 'pie',
-            name: 'Versions share',
-            data: [
-            <?php
-            	prepareVersionPieChart();
-           	?>
-            ]
-        }]
-    });
-
-	var chart2 = new Highcharts.Chart({
-        chart: {
-            renderTo: 'chartdiv_androidversions',
-            plotBackgroundColor: null,
-            plotBorderWidth: null,
-            plotShadow: false
-        },
-        credits: {
-            enabled: false
-        },
-        title: {
-            text: 'Android Versions'
-        },
-        tooltip: {
-            pointFormat: '{series.name}: <b>{point.percentage}% ({point.y})</b>',
-            percentageDecimals: 1
-        },
-        plotOptions: {
-            pie: {
-                allowPointSelect: true,
-                cursor: 'pointer',
-                dataLabels: {
-                    enabled: true,
-                    color: '#000000',
-                    connectorColor: '#000000',
-                    formatter: function() {
-                        return '<b>'+ this.point.name +'</b>: '+ this.y;
-                    }
-                }
-            }
-        },
-        series: [{
-            type: 'pie',
-            name: 'App Versions share',
-            data: [
-            <?php
-            	prepareAndroidVersionPieChart();
-           	?>
-            ]
-        }]
-    });
-
-var chart3 = new Highcharts.Chart({
-    chart: {
-        renderTo: 'chartdiv_models',
-        plotBackgroundColor: null,
-        plotBorderWidth: null,
-        plotShadow: false
-    },
-    credits: {
-            enabled: false
-        },
-    title: {
-        text: 'Android Phone Models'
-    },
-    tooltip: {
-        pointFormat: '{series.name}: <b>{point.percentage}%</b>',
-        percentageDecimals: 1
-    },
-    plotOptions: {
-        pie: {
-            allowPointSelect: true,
-            cursor: 'pointer',
-            dataLabels: {
-                enabled: true,
-                color: '#000000',
-                connectorColor: '#000000',
-                formatter: function() {
-                    return '<b>'+ this.point.name +'</b>: '+ this.y;
-                }
-            }
-        }
-    },
-    series: [{
-        type: 'pie',
-        name: 'Phone Models share',
-        data: [
-        <?php
-        	prepareModelPieChart();
-       	?>
-        ]
-    }]
-});
-
-
-var chart4 = new Highcharts.Chart({
-    chart: {
-        renderTo: 'chartdiv_orientations',
-        plotBackgroundColor: null,
-        plotBorderWidth: null,
-        plotShadow: false
-    },
-    credits: {
-            enabled: false
-        },
-    title: {
-        text: 'Phone Orientations'
-    },
-    tooltip: {
-        pointFormat: '{series.name}: <b>{point.percentage}%</b>',
-        percentageDecimals: 1
-    },
-    plotOptions: {
-        pie: {
-            allowPointSelect: true,
-            cursor: 'pointer',
-            dataLabels: {
-                enabled: true,
-                color: '#000000',
-                connectorColor: '#000000',
-                formatter: function() {
-                    return '<b>'+ this.point.name +'</b>: '+ this.y;
-                }
-            }
-        }
-    },
-    series: [{
-        type: 'pie',
-        name: 'Phone Orientation share',
-        data: [
-        <?php
-        	prepareOrientationPieChart();
-       	?>
-        ]
-    }]
-});
-
-
-
-	$('#tabs').bind('tabsshow', function(event, ui) {
-
-        if (ui.index === 2 && chart1._drawCount === 0) {
-        	chart1.replot();
-    	} 
-    	if (ui.index === 2 && chart2._drawCount === 0) {
-    		chart2.replot();
-    	}
-    	if (ui.index === 2 && chart3._drawCount === 0) {
-    		chart3.replot();
-    	}
-    	if (ui.index === 2 && chart4._drawCount === 0) {
-    		chart4.replot();
-    	}
-
-    });
-
-});
-</script>
 <!--
 	// <?php
 	// 	prepareVersionPieChart();
@@ -546,9 +358,50 @@ var chart4 = new Highcharts.Chart({
  #print_r($tab['stacktrace']);
 $res = mysqli_query($mysql, $sql);
  while ($tab = mysqli_fetch_assoc($res)) {
- 	showReport($tab);
+ 	//showReport($tab);
  }
 ?>
+
+
+<script>
+
+$(document).ready(function(){
+	
+	$('#demo').pagination({
+    dataSource: 
+    <?php 
+    	$sql = "SELECT `id` FROM `crashes` WHERE `issue_id` = '" . $_GET[issue_id] . "' order by id DESC";
+    	$res = mysqli_query($mysql, $sql);
+    	$array = array();
+    	while( $row = mysqli_fetch_array($res)){
+    		$array[] = $row['id']; // Inside while loop
+		}	
+
+		echo "[ " . implode(",", $array) . "]" 
+    ?>
+    ,
+    pageSize: 1,
+    pageRange: 5,
+    showGoInput: true,
+    showGoButton: true,
+    pageNumber: 1,
+    position: 'top',
+    formatNavigator: '<span style="color: #f00"><%= currentPage %></span> st/rd/th, <%= totalPage %> pages, <%= totalNumber %> entries',
+    callback: function(data, pagination) {
+   		console.log(data);
+   		//window.location.href='report.php?page=3'
+
+   		$.get("ajax.php", { action: "getreport", report_id: data[0] }, function(data, status){
+   			$('#cont').html(data);
+		    //alert("Data: " + data + "\nStatus: " + status);
+		  });
+    }
+})
+
+});
+</script>
+
+
 
 </body>
 </html>
