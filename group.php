@@ -7,11 +7,13 @@ include "alphaID.php";
 class Foo {
     public $id;
     public $issue_id;
+    public $stack_trace;
    
    
-    public function __construct($id, $issue_id) {
+    public function __construct($id, $issue_id, $stack_trace) {
         $this->id = $id;
         $this->issue_id = $issue_id;
+        $this->stack_trace = $stack_trace;
     }
 }
 
@@ -110,24 +112,31 @@ while ($row = mysqli_fetch_assoc($res)) {
   //$row['issue_id']
   //$row['stack_trace']
   $found = false;
+  echo $row['issue_id'] . " " . $row['id'] . "<br/>";
+ $s = preg_replace("/[^a-zA-Z\s]/","",$row['stack_trace']); 
+//echo $s . "<br/><br/><br/>";
   foreach ($arr as $key => $value) {
     if(isset($arr[$key])) {
       if ($arr[$key][0]->issue_id === $row['issue_id'])
         continue;
     }
-    similar_text($key, $row['stack_trace'], $perc);
-    //echo "similarity: $perc %\n";
-    if ($perc > 90) {
+   
+    
+   
+    similar_text($key, $s, $perc);
+
+    if ($perc > 88) {
+      echo "similarity: $perc % <br/>";
       $found = true;
-      //echo "push" . "<br>";
-      array_push($arr[$key], new Foo($row['id'], $row['issue_id']));
+      echo "push" . "<br>";
+      array_push($arr[$key], new Foo($row['id'], $row['issue_id'], $row['stack_trace']));
       break;
     }
   }
 
   if (!$found) {
     //echo "NEW" . "<br>";
-    $arr[$row['stack_trace']] = array(new Foo($row['id'], $row['issue_id']));
+    $arr[$s] = array(new Foo($row['id'], $row['issue_id'], $row['stack_trace']));
   }
 }
 
@@ -137,7 +146,7 @@ echo count($arr);
 foreach ($arr as $key => $value) {
   // todo: update
   if (count($value) > 1) {
-    print("<pre>".print_r($key,true)."</pre>");
+    print("<pre>".print_r($value[0]->stack_trace,true)."</pre>");
     print("<pre>".print_r($value,true)."</pre>");
     echo "<br><br><br>";
 
