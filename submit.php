@@ -43,6 +43,15 @@ if (isset($object['user_ip'])) {
   unset($object['user_ip']); 
 }
 
+$appid = $object['appid'];
+if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7" || $appid === "f5ar7wfpkdmda852krjpwmt8iunu4d9f") {
+  $applog = $object['application_log'];
+  if (strpos($applog, 'V2OVL3.46') === false && strpos($applog, 'VL2-8.1') === false) {
+      echo "Old version";
+      die();
+  }
+}
+
 $sql = "SELECT `status` FROM `crashes` WHERE `issue_id` = '" . $object['issue_id'] . "'";
 $res = mysqli_query($mysql,$sql);
 mysqli_data_seek($res,  0); 
