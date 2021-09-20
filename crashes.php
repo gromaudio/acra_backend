@@ -259,7 +259,7 @@ function display_crashes_vs_date() {
 	// xaxis:{
 	//   renderer: jQuery..jqplot.DateAxisRenderer,
 	//   tickOptions:{
-	//     formatString:'%b %#d'
+	//     formatString:'%b?%#d'
 	//   } 
 	// }
 	// }
@@ -368,10 +368,14 @@ function display_crashes($status) {
 	}
 
 	$order = "";
-	if ($_GET[v]) {
-		$order .= "nb_errors DESC, ";
+	if (isset($_GET['order']))
+		$order = $_GET['order'] . " DESC";
+	else {
+		if ($_GET[v]) {
+			$order .= "nb_errors DESC, ";
+		}
+		$order .= "version_code DESC, last_seen DESC";
 	}
-	$order .= "version_code DESC, last_seen DESC";
 	$sql = create_mysql_select($columns, $sel, $selA, $order, "issue_id");
 	$res = mysqli_query($mysql,$sql);
 
@@ -411,13 +415,24 @@ function display_crashes($status) {
 				if ($k == "version_code" || $k == "issue_id" || $k == "custom_data" || $k == "id" || $k == "affected_users")
 					continue;
 
+				if ($k == "last_seen") {
+					echo '<th><a href="?app=' . $_GET[app] . '&order=last_seen">last_seen</a></th>';
+					continue;
+				}
+
+				if ($k == "nb_errors") {
+					echo '<th><a href="?app=' . $_GET[app] . '&order=nb_errors">nb_errors</a></th>';
+					continue;
+				}
+
 				echo "<th>$k</th>\n";
 			}
 			$first = 0;
 			echo "</tr>\n</thead>\n<tbody>\n";
 		}
 
-		echo '<tr id="id_'.$tab['id'].'" onclick="javascript:document.location=\'./report.php?issue_id='.$tab['issue_id'].'\';">'."\n";
+		//echo '<tr id="id_'.$tab['id'].'" onclick="javascript:document.location=\'./report.php?issue_id='.$tab['issue_id'].'\';">'."\n";
+		echo '<tr id="id_'.$tab['id'].'">'."\n";
 		foreach ($tab as $k => $v) {
 			if ($k == "version_code" || $k == "issue_id" || $k == "id" || $k == "affected_users")
 				continue;
@@ -425,7 +440,8 @@ function display_crashes($status) {
 				$lines = explode("\n", $v);
 				//$idx = array_find('Caused by:', $lines);
 				//$v = $lines[$idx];
-				$value = "<div style='height:250px; overflow:hidden'>";
+				$value = "<div style='height:250px; overflow:hidden; word-wrap: break-word;'>";
+				$value .= "<a href='./report.php?issue_id=" .$tab['issue_id']. "'>";
 				/*if (array_find(": ", $lines) === FALSE && array_find(PACKAGE, $lines) === FALSE) {
 					$value .= $lines[0];
 				} else {*/
@@ -441,7 +457,9 @@ function display_crashes($status) {
 				if ($tab['issue_id'] == "") {
 					mysql_query(create_mysql_update(array('issue_id' => md5($value)), "id = ?", array($tab['id'])));
 				}
-
+				
+				
+				$value .= "</a>";
 				$value .= "</div>";
 			} else if ($k == "last_seen") {
 				$value = date("d/M/Y G:i:s", $v);
