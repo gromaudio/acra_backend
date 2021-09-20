@@ -25,7 +25,9 @@ if(!isset($_GET['appid']))
 
 $appid = $_GET['appid'];
 
-if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7") { // tombstones
+$skip = isset($_GET['limitOffset']) && isset($_GET['limitCount']);
+
+if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7" && !$skip) { // tombstones
   // todo: delete for tombstones
   mysqli_query($mysql, 'DELETE from crashes WHERE stack_trace LIKE "%crash_dump failed to dump process%"');
 
@@ -91,7 +93,7 @@ if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7") { // tombstones
     }
   }
 
-} elseif ($appid === "f5ar7wfpkdmda852krjpwmt8iunu4d9f") { // ANR
+} elseif ($appid === "f5ar7wfpkdmda852krjpwmt8iunu4d9f" && !$skip) { // ANR
  mysqli_query($mysql, "update `crashes` set status=2 WHERE `appid` = 'f5ar7wfpkdmda852krjpwmt8iunu4d9f' and stack_trace NOT LIKE '%grom%' and stack_trace NOT LIKE '%vline%' and stack_trace NOT LIKE '%vbase%' and stack_trace NOT LIKE '%exo%' and stack_trace NOT LIKE '%bluetooth%' and stack_trace NOT LIKE '%dashlinq%' and stack_trace NOT LIKE '%aalinq%' and stack_trace NOT LIKE '%com.android%'");
 
   mysqli_query($mysql, "DELETE FROM crashes WHERE appid='f5ar7wfpkdmda852krjpwmt8iunu4d9f'
@@ -101,7 +103,12 @@ if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7") { // tombstones
                         GROUP BY n.application_log) x) ORDER BY `id`  DESC");
 }
 
+
+
 $sql = "SELECT `id`, `issue_id`, `stack_trace` FROM `crashes` WHERE `appid` = '" . $appid ."' and (status = 0 or status = 1) group by issue_id";
+if ($skip) {
+    $sql .= " LIMIT " . $_GET['limitOffset'] . ", " . $_GET['limitCount'];
+}
 $res = mysqli_query($mysql, $sql);
 mysqli_data_seek($res,  0); 
 
