@@ -42,9 +42,9 @@ if ($rows == 0) {
 		$order = "id DESC";
 
 		// Filter by appid
-		if (!empty($tab[appid])) {
+		if (!empty($tab['appid'])) {
 			$sel .= " AND appid = '?'";
-			$selA[] = mysqli_real_escape_string($mysql, $tab[appid]);
+			$selA[] = mysqli_real_escape_string($mysql, $tab['appid']);
 		}
 
 		$sql = create_mysql_select($columns, $sel, $selA, $order, "issue_id");
@@ -62,7 +62,7 @@ if ($rows == 0) {
 		} else
 			$issues = mysqli_num_rows($result);
 
-		echo "<h3><a href=\"reports.php?app=" . $tab[appid] . "\">" . $tab[appname] . " (".$issues.")" . "</a><br /></h3>";
+		echo "<h3><a href=\"reports.php?app=" . $tab['appid'] . "\">" . $tab['appname'] . " (".$issues.")" . "</a><br /></h3>";
 		//echo "<h1>".status_name($status)." reports (".$issues.")</h1>\n";
 	}
 }

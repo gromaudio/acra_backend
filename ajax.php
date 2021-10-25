@@ -7,8 +7,8 @@ ob_start();
 $obj = array();
 
 
-if ($_GET[action] == "getreport") {
-	$sql = "select id, added_date, custom_data, application_log, logcat from crashes where id=" . intval($_GET[report_id]);
+if ($_GET['action'] == "getreport") {
+	$sql = "select id, added_date, custom_data, application_log, logcat from crashes where id=" . intval($_GET['report_id']);
 	$res = mysqli_query($mysql, $sql);
 	$tab = mysqli_fetch_assoc($res);
 
@@ -41,10 +41,10 @@ logcat*/
 }
 
 $sel = "issue_id = '?'";
-$selA = array($_GET[issue_id]);
+$selA = array($_GET['issue_id']);
 
-if ($_GET[action] == "update_status") {
-	$obj['status'] = intval($_GET[status]);
+if ($_GET['action'] == "update_status") {
+	$obj['status'] = intval($_GET['status']);
 }
 
 $sql = create_mysql_update($obj, $sel, $selA);

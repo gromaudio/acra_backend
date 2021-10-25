@@ -5,7 +5,7 @@ include "html.php";
 include "mysql.php";
 include "crashes.php";
 
-if (!isset($_GET[issue_id])) {
+if (!isset($_GET['issue_id'])) {
 	header("location: index.php");
 	exit;
 }
@@ -83,14 +83,14 @@ function showLastOccurred($tab) {
 
 function getNumberOfCrashes() {
 	global $mysql;
-	$sql_overall_crashnr = create_mysql_select(array('id'), "issue_id = '?'", array($_GET[issue_id]));
+	$sql_overall_crashnr = create_mysql_select(array('id'), "issue_id = '?'", array($_GET['issue_id']));
 	$res_overall_crashnr = mysqli_query($mysql,$sql_overall_crashnr);
 	return mysqli_num_rows($res_overall_crashnr);
 }
 
 function showNumberOfCrashes() {
         global $mysql;	
-	$sql_overall_crashnr = create_mysql_select(array('id'), "issue_id = '?'", array($_GET[issue_id]));
+	$sql_overall_crashnr = create_mysql_select(array('id'), "issue_id = '?'", array($_GET['issue_id']));
 	$res_overall_crashnr = mysqli_query($mysql, $sql_overall_crashnr);
 	$rows = mysqli_num_rows($res_overall_crashnr);
 	if ($rows == 0) {
@@ -108,7 +108,7 @@ function prepareVersionPieChart() {
 	global $mysql;
 	$c = array('app_version_code', 'count(app_version_code) as nb');
 	$sl = "issue_id = '?'";
-	$slA = array($_GET[issue_id]);
+	$slA = array($_GET['issue_id']);
 
 	$sql = create_mysql_select($c, $sl, $slA, 'nb DESC', 'app_version_code');
 	$res = mysqli_query($mysql,$sql);
@@ -119,8 +119,8 @@ function prepareVersionPieChart() {
 		if (strlen($empty)) {
 			$js .= ", ";
 		}
-		$percantage = 100.0*($t[nb]/getNumberOfCrashes());
-		$js .= "['v".$t[app_version_code]."', " . $t[nb] . ", ". $percantage ."], ";
+		$percantage = 100.0*($t['nb']/getNumberOfCrashes());
+		$js .= "['v".$t['app_version_code']."', " . $t['nb'] . ", ". $percantage ."], ";
 		// $value .= '<b title="'.$t[nb].' occurrences">'.$t[app_version_code]."</b> (".sprintf("%.1f%%", 100.0*$t[nb]/$tab[nb_errors]).")<br />";
 	}
 	$js = substr_replace($js ,"\t \n", -2);
@@ -132,7 +132,7 @@ function prepareModelPieChart() {
 	global $mysql;
 	$c = array('phone_model', 'count(phone_model) as nb');
 	$sl = "issue_id = '?'";
-	$slA = array($_GET[issue_id]);
+	$slA = array($_GET['issue_id']);
 
 	$sql = create_mysql_select($c, $sl, $slA, 'nb DESC', 'phone_model');
 	$res = mysqli_query($mysql,$sql);
@@ -140,8 +140,8 @@ function prepareModelPieChart() {
 	$empty = "";
 	$js = "\t";
 	while ($t = mysqli_fetch_assoc($res)) {
-		$percantage = 100.0*($t[nb]/getNumberOfCrashes());
-		$js .= "['".$t[phone_model]."', " . $t[nb] . ", ". $percantage ."], ";
+		$percantage = 100.0*($t['nb']/getNumberOfCrashes());
+		$js .= "['".$t['phone_model']."', " . $t['nb'] . ", ". $percantage ."], ";
 		// $value .= '<b title="'.$t[nb].' occurrences">'.$t[app_version_code]."</b> (".sprintf("%.1f%%", 100.0*$t[nb]/$tab[nb_errors]).")<br />";
 	}
 	$js = substr_replace($js ,"\t \n", -2);
@@ -152,7 +152,7 @@ function prepareAndroidVersionPieChart() {
 	global $mysql;
 	$c = array('android_version', 'count(android_version) as nb');
 	$sl = "issue_id = '?'";
-	$slA = array($_GET[issue_id]);
+	$slA = array($_GET['issue_id']);
 
 	$sql = create_mysql_select($c, $sl, $slA, 'nb DESC', 'android_version');
 	$res = mysqli_query($mysql,$sql);
@@ -160,8 +160,8 @@ function prepareAndroidVersionPieChart() {
 	$empty = "";
 	$js = "\t";
 	while ($t = mysqli_fetch_assoc($res)) {
-		$percantage = 100.0*($t[nb]/getNumberOfCrashes());
-		$js .= "['".$t[android_version]."', " . $t[nb] . ", ". $percantage ."], ";
+		$percantage = 100.0*($t['nb']/getNumberOfCrashes());
+		$js .= "['".$t['android_version']."', " . $t['nb'] . ", ". $percantage ."], ";
 		// $value .= '<b title="'.$t[nb].' occurrences">'.$t[app_version_code]."</b> (".sprintf("%.1f%%", 100.0*$t[nb]/$tab[nb_errors]).")<br />";
 	}
 	$js = substr_replace($js ,"\t \n", -2);
@@ -172,7 +172,7 @@ function prepareOrientationPieChart() {
 	global $mysql;
 	$c = array('crash_configuration', 'count(crash_configuration) as nb');
 	$sl = "issue_id = '?'";
-	$slA = array($_GET[issue_id]);
+	$slA = array($_GET['issue_id']);
 
 	$sql = create_mysql_select($c, $sl, $slA, 'nb DESC', 'crash_configuration');
 	$res = mysqli_query($mysql,$sql);
@@ -182,12 +182,12 @@ function prepareOrientationPieChart() {
 	$orientation_portrait = 0;
 	$orientation_landscape = 0;
 	while ($t = mysqli_fetch_assoc($res)) {
-		$percantage = 100.0*($t[nb]/getNumberOfCrashes());
+		$percantage = 100.0*($t['nb']/getNumberOfCrashes());
 
-		if (stristr($t[crash_configuration], "orientation=ORIENTATION_PORTRAIT")) { 
+		if (stristr($t['crash_configuration'], "orientation=ORIENTATION_PORTRAIT")) { 
 			$orientation_portrait++;
 
-		} else if (stristr($t[crash_configuration], "orientation=ORIENTATION_LANDSCAPE")) {
+		} else if (stristr($t['crash_configuration'], "orientation=ORIENTATION_LANDSCAPE")) {
 			$orientation_landscape++;
 		}
 	}
@@ -198,7 +198,7 @@ function prepareOrientationPieChart() {
 	echo $js;
 }
 
-$sql = "SELECT `appid` FROM `crashes` WHERE `issue_id` = '" . $_GET[issue_id] . "'";
+$sql = "SELECT `appid` FROM `crashes` WHERE `issue_id` = '" . $_GET['issue_id'] . "'";
 $res = mysqli_query($mysql,$sql);
 mysqli_data_seek($res,  0); $row = mysqli_fetch_array($res)[0];
 
@@ -212,7 +212,7 @@ echo "</div>\n";
 // Display reports
 $c = array('status', 'count(issue_id) as nb_errors', 'added_date', 'stack_trace');
 $sl = "issue_id = '?'";
-$slA = array($_GET[issue_id]);
+$slA = array($_GET['issue_id']);
 
 $sql = create_mysql_select($c, $sl, $slA, "id desc", 'issue_id');
 
@@ -239,7 +239,7 @@ $rows = mysqli_num_rows($res);
 	  	showLastOccurred($tab1);
 	  	showNumberOfCrashes();
 
-		$array = affectedVersionsAndUsers($_GET[issue_id]);
+		$array = affectedVersionsAndUsers($_GET['issue_id']);
 		echo "<br/>";
 		echo "<b>Affected users: </b>" . count($array['users']);
 		echo "<br/>";
@@ -370,7 +370,7 @@ $(document).ready(function(){
 	$('#demo').pagination({
     dataSource: 
     <?php 
-    	$sql = "SELECT `id` FROM `crashes` WHERE `issue_id` = '" . $_GET[issue_id] . "' order by id DESC";
+    	$sql = "SELECT `id` FROM `crashes` WHERE `issue_id` = '" . $_GET['issue_id'] . "' order by id DESC";
     	$res = mysqli_query($mysql, $sql);
     	$array = array();
     	while( $row = mysqli_fetch_array($res)){

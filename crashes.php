@@ -99,7 +99,7 @@ function display_versions($appid) {
 	echo "</tr>\n</thead>\n<tbody>\n<tr>\n";
 	foreach ($nb_errors as $id => $nb) {
 		echo '<td style="text-align: center; ';
-		if ($_GET[v] == $versions[$id]) {
+		if ($_GET['v'] == $versions[$id]) {
 			echo " background: rgb(50,200,50);";
 		}
 		echo "\"><a class=\"versions\" href=\"?app=".$appid."&v=".$versions[$id]."\">$nb</a></td>\n";
@@ -181,17 +181,17 @@ function display_crashes_vs_date() {
 	$seriesNames = array();
 	$data = array();
 	while ($tab = mysqli_fetch_assoc($res)) {
-		if (!strlen($tab[package_name])) {
+		if (!strlen($tab['package_name'])) {
 			continue;
 		}
-		$varname = str_replace(".", "", $tab[package_name]);
+		$varname = str_replace(".", "", $tab['package_name']);
 		$series[] = $varname;
-		$seriesNames[] = $tab[package_name];
+		$seriesNames[] = $tab['package_name'];
 		$data[$varname] = array();
 		
-		$crashes = get_nb_crashes_per_package($tab[package_name]);
+		$crashes = get_nb_crashes_per_package($tab['package_name']);
 		foreach ($crashes as $crash_data) {
-			$data[$varname][] = "['".$crash_data[date]."', ".$crash_data[nb_crashes]."]";
+			$data[$varname][] = "['".$crash_data['date']."', ".$crash_data['nb_crashes']."]";
 		}
 		echo "var $varname=[". implode(", ", $data[$varname]) ."];\n";
 		
@@ -335,7 +335,7 @@ function display_crashes($status) {
 	$selA = array($status);
 
 	// Filter by appid
-	if(!empty($_GET[app])) {
+	if(!empty($_GET['app'])) {
 		$sel .= " AND appid = '?'";
 		$selA[] = mysqli_real_escape_string($mysql,$_GET['app']);
 	}
@@ -348,14 +348,14 @@ function display_crashes($status) {
 	// }
 
 	// Filter by app version code
-	if (!empty($_GET[v])) {
+	if (!empty($_GET['v'])) {
 		$sel .= " AND app_version_code = ?";
-		$selA[] = mysqli_real_escape_string($mysql,$_GET[v]);
+		$selA[] = mysqli_real_escape_string($mysql,$_GET['v']);
 	}
 
 	// Search
-	if ($_GET[q] != '') {
-		$args = explode(" ", $_GET[q]);
+	if ($_GET['q'] != '') {
+		$args = explode(" ", $_GET['q']);
 		foreach($args as $arg) {
 			if ($arg[0] == "-") {
 				$sel .= " AND custom_data NOT LIKE '%?%'";
@@ -371,7 +371,7 @@ function display_crashes($status) {
 	if (isset($_GET['order']))
 		$order = $_GET['order'] . " DESC";
 	else {
-		if ($_GET[v]) {
+		if ($_GET['v']) {
 			$order .= "nb_errors DESC, ";
 		}
 		$order .= "version_code DESC, last_seen DESC";
@@ -394,7 +394,7 @@ function display_crashes($status) {
 	echo "<button style='display: inline; float: right; height: 40px; padding: 10px;' onclick=\"location.href='group.php?appid=$_GET[app]'\" type='button'>
          PROCESS</button>";
 
-	if ($_GET[q] != '') {
+	if ($_GET['q'] != '') {
 		echo "<p>Filtered with phone_model matching '$_GET[q]'</p>\n";
 	}
 	$first = 1;
@@ -416,12 +416,12 @@ function display_crashes($status) {
 					continue;
 
 				if ($k == "last_seen") {
-					echo '<th><a href="?app=' . $_GET[app] . '&order=last_seen">last_seen</a></th>';
+					echo '<th><a href="?app=' . $_GET['app'] . '&order=last_seen">last_seen</a></th>';
 					continue;
 				}
 
 				if ($k == "nb_errors") {
-					echo '<th><a href="?app=' . $_GET[app] . '&order=nb_errors">nb_errors</a></th>';
+					echo '<th><a href="?app=' . $_GET['app'] . '&order=nb_errors">nb_errors</a></th>';
 					continue;
 				}
 

@@ -46,9 +46,9 @@ if (isset($object['user_ip'])) {
 $appid = $object['appid'];
 if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7" || $appid === "f5ar7wfpkdmda852krjpwmt8iunu4d9f") {
   $applog = $object['application_log'];
-  if (strpos($applog, 'V2OVL3.46') === false && strpos($applog, 'VL2-8.1') === false) {
+  if (strpos($applog, 'V2OVL3.49') === false && strpos($applog, 'VL2-8.1') === false /*&& strpos($applog, 'crash_dump failed') === false*/) {
       echo "Old version";
-      die();
+      return;
   }
 }
 

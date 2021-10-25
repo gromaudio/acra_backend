@@ -46,6 +46,16 @@ a:active {
 	color: red;
 }
 
+tr td div a, tr td div a:hover, tr td div a:visited {
+	text-decoration: none;
+	color: #669;
+}
+
+tr td div a:hover{
+	text-decoration: none;
+	color: #009;
+}
+
 a.button {
 	color: #000;
 	font-family:Arial,sans-serif;
