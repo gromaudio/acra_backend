@@ -4,6 +4,12 @@ include "mysql.php";
 include "crashes.php";
 include "alphaID.php";
 
+function microtime_float()
+{
+    list($usec, $sec) = explode(" ", microtime());
+    return ((float)$usec + (float)$sec);
+}
+
 class Foo {
     public $id;
     public $issue_id;
@@ -25,7 +31,9 @@ if(!isset($_GET['appid']))
 
 $appid = $_GET['appid'];
 
-$skip = isset($_GET['limitOffset']) && isset($_GET['limitCount']);
+$skip = isset($_GET['offset']) && isset($_GET['count']);
+$limitLength = isset($_GET['lengthDiffPercent']) ? $_GET['lengthDiffPercent'] : 85;
+$length = isset($_GET['length']) ? $_GET['length'] : 15000;
 
 if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7" && !$skip) { // tombstones
   // todo: delete for tombstones
@@ -105,14 +113,21 @@ if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7" && !$skip) { // tombstones
 
 
 
-$sql = "SELECT `id`, `issue_id`, `stack_trace` FROM `crashes` WHERE `appid` = '" . $appid ."' and (status = 0 or status = 1) group by issue_id";
-if ($skip) {
-    $sql .= " LIMIT " . $_GET['limitOffset'] . ", " . $_GET['limitCount'];
-}
+$sql = "SELECT `id`, COUNT(id) AS number, `issue_id`, `stack_trace` FROM `crashes` WHERE `appid` = '$appid' and (status = 0 or status = 1) and CHAR_LENGTH(`stack_trace`) < $length group by issue_id";
+
+if (isset($_GET['group']))
+	$sql .= " ORDER BY number DESC";
+if ($skip)
+    $sql .= " LIMIT " . $_GET['offset'] . ", " . $_GET['count'];
+
+echo "$sql <br/>";
+
 $res = mysqli_query($mysql, $sql);
 mysqli_data_seek($res,  0); 
 
 $arr = array();
+
+$time_start = microtime_float();
 
 while ($row = mysqli_fetch_assoc($res)) {
   //$row['id'];
@@ -127,9 +142,15 @@ while ($row = mysqli_fetch_assoc($res)) {
       if ($arr[$key][0]->issue_id === $row['issue_id'])
         continue;
     }
+
+    $l1 = strlen($key);
+    $l2 = strlen($s); 
+    $diff = min($l1, $l2) * 100 / max($l1, $l2);
+    //echo "diff: $l1/$l2 = $diff <br/>";
+    if ($diff < $limitLength)
+    	continue;
    
-    
-   
+   	$perc = 0;
     similar_text($key, $s, $perc);
 
     if ($perc > 88) {
@@ -146,6 +167,10 @@ while ($row = mysqli_fetch_assoc($res)) {
     $arr[$s] = array(new Foo($row['id'], $row['issue_id'], $row['stack_trace']));
   }
 }
+
+$time_end = microtime_float();
+$time = $time_end - $time_start;
+echo "Execution $time seconds<br/>";
 
 
 echo count($arr);
