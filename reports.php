@@ -3,6 +3,7 @@
 include "checklogin.php";
 include "html.php";
 include "mysql.php";
+include "version.php";
 include "crashes.php";
 include "alphaID.php";
 
@@ -48,7 +49,7 @@ if (!isset($_GET['status'])) {
 if ($_GET['status'] == STATE_NEW) {
 	//display_versions($_GET[app]);
 }
-display_crashes($status, $_GET['app']);
+display_crashes($status, isset($_GET['beta']) && $_GET['beta'] === 'true');
 mysqli_close($mysql);
 
 ?></body>

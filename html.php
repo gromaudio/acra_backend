@@ -98,7 +98,7 @@ $mysql = mysqli_connect($mysql_server, $mysql_user, $mysql_password);
 			</script>
 
 	<div id="wrapper">
-		<a id="logo"href=""></a>
+
 		<div id="droid"></div>
 <!-- User Menu Start -->
 			<ul id="nav">

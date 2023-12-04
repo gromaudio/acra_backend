@@ -15,6 +15,19 @@ if(!isset($_SESSION)) {
     session_start(); 
 } 
 
+// display services
+echo "<div id=\"services\">";
+echo "<h5><a href=\"services.php?id=group\">" . "Group " . "</a>
+– group all reports into issues (takes some time, DO NOT refresh before the finish)</h5>";
+
+echo "<h5><a href=\"services.php?id=clean\">" . "Clean " . "</a>
+– clean all reports from the old versions</h5>";
+
+echo "<h5><a href=\"services.php?id=clean_plus\">" . "Clean+ " . "</a>
+– removes all issues that have only 1 occurrence (use for ANRs)</h5>";
+
+echo "</div>";
+
 
 // Display Your Apps
 $sql = "SELECT `id` FROM `user` WHERE `username` = '" . strtolower($_SESSION["username"]) . "'";
@@ -26,12 +39,11 @@ $sql = "SELECT `appname`, `appid` FROM `app` WHERE `userid` = $userid";
 $res = mysqli_query($mysql, $sql);
 $rows = mysqli_num_rows($res);
 
-echo "<br /> <br /> <br />";
-echo "<div id=\"listApps\">";
+echo "<br/><div id=\"listApps\">";
 if ($rows == 0) {
 	echo "No Applications registered!";
 } else {
-	echo "My Applications: <br />";
+	echo "<h3>My Applications:</h3>";
 	while ($tab = mysqli_fetch_assoc($res)) {
 		//echo "<a href=\"reports.php?app=" . $tab[appid] . "\">" . $tab[appname] . "</a><br />";
 		
@@ -72,6 +84,5 @@ echo "</div>";
 // display_crashes_vs_date();
 
 echo "<br /><br /><br /><br />";
-echo "<a href=\"register_app.php\">Register Application</a>";
 
 ?>

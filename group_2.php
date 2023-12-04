@@ -1,31 +1,18 @@
 <?php
 
-include_once "mysql.php";
-include_once "crashes.php";
-include_once "alphaID.php";
+include "mysql.php";
+include "crashes.php";
+include "alphaID.php";
 
-if (!function_exists('microtime_float'))   {
-  	function microtime_float()
-	{
-	    list($usec, $sec) = explode(" ", microtime());
-	    return ((float)$usec + (float)$sec);
-	}
-}
-
-
-if (!class_exists('Foo')) {
-   class Foo {
-	    public $id;
-	    public $issue_id;
-	    public $stack_trace;
-	   
-	   
-	    public function __construct($id, $issue_id, $stack_trace) {
-	        $this->id = $id;
-	        $this->issue_id = $issue_id;
-	        $this->stack_trace = $stack_trace;
-	    }
-	}
+class Foo {
+    public $id;
+    public $issue_id;
+   
+   
+    public function __construct($id, $issue_id) {
+        $this->id = $id;
+        $this->issue_id = $issue_id;
+    }
 }
 
 ob_start();
@@ -36,11 +23,7 @@ if(!isset($_GET['appid']))
 
 $appid = $_GET['appid'];
 
-$skip = isset($_GET['offset']) && isset($_GET['count']);
-$limitLength = isset($_GET['lengthDiffPercent']) ? $_GET['lengthDiffPercent'] : 85;
-$length = isset($_GET['length']) ? $_GET['length'] : 15000;
-
-if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7" && !$skip) { // tombstones
+if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7") { // tombstones
   // todo: delete for tombstones
   mysqli_query($mysql, 'DELETE from crashes WHERE stack_trace LIKE "%crash_dump failed to dump process%"');
 
@@ -106,7 +89,7 @@ if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7" && !$skip) { // tombstones
     }
   }
 
-} elseif ($appid === "f5ar7wfpkdmda852krjpwmt8iunu4d9f" && !$skip) { // ANR
+} elseif ($appid === "f5ar7wfpkdmda852krjpwmt8iunu4d9f") { // ANR
  mysqli_query($mysql, "update `crashes` set status=2 WHERE `appid` = 'f5ar7wfpkdmda852krjpwmt8iunu4d9f' and stack_trace NOT LIKE '%grom%' and stack_trace NOT LIKE '%vline%' and stack_trace NOT LIKE '%vbase%' and stack_trace NOT LIKE '%exo%' and stack_trace NOT LIKE '%bluetooth%' and stack_trace NOT LIKE '%dashlinq%' and stack_trace NOT LIKE '%aalinq%' and stack_trace NOT LIKE '%com.android%'");
 
   mysqli_query($mysql, "DELETE FROM crashes WHERE appid='f5ar7wfpkdmda852krjpwmt8iunu4d9f'
@@ -116,23 +99,11 @@ if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7" && !$skip) { // tombstones
                         GROUP BY n.application_log) x) ORDER BY `id`  DESC");
 }
 
-
-
-$sql = "SELECT `id`, COUNT(id) AS number, `issue_id`, `stack_trace` FROM `crashes` WHERE `appid` = '$appid' and (status = 0 or status = 1) and CHAR_LENGTH(`stack_trace`) < $length group by issue_id";
-
-if (isset($_GET['group']))
-	$sql .= " ORDER BY number DESC";
-if ($skip)
-    $sql .= " LIMIT " . $_GET['offset'] . ", " . $_GET['count'];
-
-echo "$sql <br/>";
-
+$sql = "SELECT `id`, `issue_id`, `stack_trace` FROM `crashes` WHERE `appid` = '" . $appid ."' and (status = 0 or status = 1) group by issue_id";
 $res = mysqli_query($mysql, $sql);
 mysqli_data_seek($res,  0); 
 
 $arr = array();
-
-$time_start = microtime_float();
 
 while ($row = mysqli_fetch_assoc($res)) {
   //$row['id'];
@@ -140,42 +111,27 @@ while ($row = mysqli_fetch_assoc($res)) {
   //$row['stack_trace']
   $found = false;
   echo $row['issue_id'] . " " . $row['id'] . "<br/>";
- $s = preg_replace("/[^a-zA-Z\s]/","",$row['stack_trace']); 
-//echo $s . "<br/><br/><br/>";
   foreach ($arr as $key => $value) {
     if(isset($arr[$key])) {
       if ($arr[$key][0]->issue_id === $row['issue_id'])
         continue;
     }
-
-    $l1 = strlen($key);
-    $l2 = strlen($s); 
-    $diff = min($l1, $l2) * 100 / max($l1, $l2);
-    //echo "diff: $l1/$l2 = $diff <br/>";
-    if ($diff < $limitLength)
-    	continue;
-   
-   	$perc = 0;
-    similar_text($key, $s, $perc);
-
-    if ($perc > 88) {
-      echo "similarity: $perc % <br/>";
+    similar_text($key, $row['stack_trace'], $perc);
+//    echo "similarity: $perc %\n";
+    if ($perc > 90) {
+	  echo "similarity: $perc % <br/>";
       $found = true;
       echo "push" . "<br>";
-      array_push($arr[$key], new Foo($row['id'], $row['issue_id'], $row['stack_trace']));
+      array_push($arr[$key], new Foo($row['id'], $row['issue_id']));
       break;
     }
   }
 
   if (!$found) {
     //echo "NEW" . "<br>";
-    $arr[$s] = array(new Foo($row['id'], $row['issue_id'], $row['stack_trace']));
+    $arr[$row['stack_trace']] = array(new Foo($row['id'], $row['issue_id']));
   }
 }
-
-$time_end = microtime_float();
-$time = $time_end - $time_start;
-echo "Execution $time seconds<br/>";
 
 
 echo count($arr);
@@ -183,14 +139,14 @@ echo count($arr);
 foreach ($arr as $key => $value) {
   // todo: update
   if (count($value) > 1) {
-    print("<pre>".print_r($value[0]->stack_trace,true)."</pre>");
+    print("<pre>".print_r($key,true)."</pre>");
     print("<pre>".print_r($value,true)."</pre>");
     echo "<br><br><br>";
 
     $issue_id = $value[0]->issue_id;
     foreach ($value as $foo) {
       $sql = "update crashes set `issue_id`='" . $issue_id . "' WHERE `issue_id` = '" . $foo->issue_id . "'";
-      $res = mysqli_query($mysql, $sql);
+      //$res = mysqli_query($mysql, $sql);
       echo "$sql<br><br>";
     }
   }
@@ -201,10 +157,9 @@ foreach ($arr as $key => $value) {
 
 
 // Close MySQL
-if (!isset($keepConnection))
-	mysqli_close($mysql);
+mysqli_close($mysql);
 
-//header('Location: ' . $_SERVER['HTTP_REFERER']);
+header('Location: ' . $_SERVER['HTTP_REFERER']);
 
 
 ?>
