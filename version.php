@@ -28,4 +28,15 @@ $explodedVersion = explode('.', $VERSION_RELEASE);
 //var_dump($explodedVersion);
 $VERSION_FILTERED = $prefix . $explodedVersion[0] . "." . $explodedVersion[1];
 //echo "VERSION_FILTERED: " . $VERSION_FILTERED . "<br/>";
+
+$data = getHtml('https://g-auth.net/ota/ota.php?action=get_version&m=VLINE2_SC2&type=release');
+//echo $data . "<br/>";
+$prefix = "V2SC";
+$position = strpos($data, $prefix);
+//echo $position . "<br/>";
+$VERSION_RELEASE_A12 = substr($data, $position + 4);
+$VERSION_RELEASE_FULL_A12 = $prefix . $VERSION_RELEASE_A12;
+$explodedVersion = explode('.', $VERSION_RELEASE_A12);
+$VERSION_FILTERED_A12 = $prefix . $explodedVersion[0] . "." . $explodedVersion[1];
+//echo "VERSION_FILTERED_A12: " . $VERSION_FILTERED_A12 . "<br/>";
 ?>

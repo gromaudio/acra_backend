@@ -24,7 +24,7 @@ echo "<h5><a href=\"services.php?id=clean\">" . "Clean " . "</a>
 – clean all reports from the old versions</h5>";
 
 echo "<h5><a href=\"services.php?id=clean_plus\">" . "Clean+ " . "</a>
-– removes all issues that have only 1 occurrence (use for ANRs)</h5>";
+– removes all issues that have only 1 occurrence (ANRs and Tombstones only)</h5>";
 
 echo "</div>";
 

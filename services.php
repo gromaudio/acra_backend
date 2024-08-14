@@ -7,11 +7,11 @@ $appid = $_GET['id'];
 if ($appid === "group") { 
 	include('task_group.php');
 } else if ($appid === "clean") {
-	$q = "DELETE FROM crashes WHERE (appid='n7yjvztxh97d76jy4ek5ax4uc3d9cgx7' or appid='f5ar7wfpkdmda852krjpwmt8iunu4d9f') and application_log NOT LIKE '%$VERSION_FILTERED.%'";
+	$q = "DELETE FROM crashes WHERE (appid='n7yjvztxh97d76jy4ek5ax4uc3d9cgx7' or appid='f5ar7wfpkdmda852krjpwmt8iunu4d9f') AND (application_log NOT LIKE '%$VERSION_FILTERED.%' AND application_log NOT LIKE '%$VERSION_FILTERED_A12.%')";
 	mysqli_query($mysql, $q);
 	echo $q . "<br/>";
 
-	$q = "DELETE FROM crashes WHERE (appid='95wjw673hkkiw37rcumqarrwiczcqpk3' or appid='72gym8mf5juqjwxk43y8m47ygq3nnab8' or appid='88wjw673hkkiw37rcumqarrwiczcqpk3' or appid='5ztxh97ax4uc3n7yjvd76jy4ekd9cgx7') and custom_data NOT LIKE '%$VERSION_FILTERED.%'";
+	$q = "DELETE FROM crashes WHERE (appid='95wjw673hkkiw37rcumqarrwiczcqpk3' or appid='72gym8mf5juqjwxk43y8m47ygq3nnab8' or appid='88wjw673hkkiw37rcumqarrwiczcqpk3' or appid='5ztxh97ax4uc3n7yjvd76jy4ekd9cgx7') and (custom_data NOT LIKE '%$VERSION_FILTERED.%' AND custom_data NOT LIKE '%$VERSION_FILTERED_A12.%')";
 	mysqli_query($mysql, $q);
 	echo $q . "<br/>";
 

@@ -11,7 +11,7 @@ fclose($f);
 
 ob_start();
 
-global $VERSION_RELEASE, $VERSION_RELEASE_FULL, $VERSION_FILTERED;
+global $VERSION_RELEASE, $VERSION_RELEASE_FULL, $VERSION_FILTERED, $VERSION_RELEASE_A12, $VERSION_RELEASE_FULL_A12, $VERSION_FILTERED_A12;
 
 $BUG4787_VER = 'V2OVL3.71.1.0'; //vk
 
@@ -51,14 +51,24 @@ if (isset($object['user_ip'])) {
 $appid = $object['appid'];
 if ($appid === "n7yjvztxh97d76jy4ek5ax4uc3d9cgx7" || $appid === "f5ar7wfpkdmda852krjpwmt8iunu4d9f") {
   $applog = $object['application_log'];
-  if (strpos($applog, "rk3288:8.1.0/" . $VERSION_FILTERED) === false && strpos($applog, 'VL2-8.1') === false /*&& strpos($applog, 'crash_dump failed') === false*/ && strpos($applog, $BUG4787_VER) === false) {
+  if (strpos($applog, "rk3288:8.1.0/" . $VERSION_FILTERED) === false && 
+  		strpos($applog, 'VL2-8.1') === false 
+  		/*&& strpos($applog, 'crash_dump failed') === false*/ && 
+  		strpos($applog, 'V2SC0.1') === false && 
+  		strpos($applog, $BUG4787_VER) === false &&
+  		strpos($applog, "rk3288_Android12:12/" . $VERSION_FILTERED_A12) === false) {
       echo "Old version";
       return;
   }
 } 
 else if ($appid === "72gym8mf5juqjwxk43y8m47ygq3nnab8" || $appid === "95wjw673hkkiw37rcumqarrwiczcqpk3" || $appid === "5ztxh97ax4uc3n7yjvd76jy4ekd9cgx7") {
   $applog = $object['custom_data'];
-    if (strpos($applog, $VERSION_FILTERED) === false && strpos($applog, 'VL2-8.1') === false && strpos($applog, 'LITE_N_VL') === false && strpos($applog, $BUG4787_VER) === false) {
+    if (strpos($applog, $VERSION_FILTERED) === false && 
+    	strpos($applog, 'VL2-8.1') === false && 
+    	strpos($applog, 'V2SC0.1') === false && 
+    	strpos($applog, 'LITE_N_VL') === false && 
+    	strpos($applog, $BUG4787_VER) === false &&
+    	strpos($applog, $VERSION_FILTERED_A12) === false) {
       echo "Old version";
       return;
   }
