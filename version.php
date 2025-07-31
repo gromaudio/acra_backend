@@ -39,4 +39,17 @@ $VERSION_RELEASE_FULL_A12 = $prefix . $VERSION_RELEASE_A12;
 $explodedVersion = explode('.', $VERSION_RELEASE_A12);
 $VERSION_FILTERED_A12 = $prefix . $explodedVersion[0] . "." . $explodedVersion[1];
 //echo "VERSION_FILTERED_A12: " . $VERSION_FILTERED_A12 . "<br/>";
+//echo "$VERSION_RELEASE_A12 $VERSION_RELEASE_FULL_A12 $VERSION_FILTERED_A12";
+
+
+$data = getHtml('https://g-auth.net/ota/ota.php?action=get_version&m=VLINE_LITE2&type=release');
+//echo $data . "<br/>";
+$prefix = "LITE_N_VL";
+$position = strpos($data, $prefix);
+//echo $position . "<br/>";
+$VERSION_RELEASE_A7 = substr($data, $position + 9);
+$VERSION_RELEASE_FULL_A7 = $prefix . $VERSION_RELEASE_A7;
+$explodedVersion = explode('.', $VERSION_RELEASE_A7);
+$VERSION_FILTERED_A7 = $prefix . $explodedVersion[0] . "." . $explodedVersion[1];
+//echo "VERSION_FILTERED_A7: " . $VERSION_FILTERED_A7 . "<br/>";
 ?>

@@ -294,44 +294,91 @@ function display_crashes_vs_date() {
   // echo "});</script>";
 }
 
+/**
+ * Gets the unique users (from user_email) and versions (from android_version)
+ * for a given issue_id.
+ *
+ * This version is much more efficient as it uses a single SQL query to
+ * aggregate the unique values directly in the database.
+ *
+ * @param string $issue_id The issue ID to look up.
+ * @return array An associative array with 'users' and 'versions'.
+ */
 function affectedVersionsAndUsers($issue_id) {
-  global $mysql;
-  global $_GET, $package;
+    global $mysql;
 
-  $columns = array('custom_data');
+    // Since we are not using a prepared statement, it's crucial to escape the input
+    // to prevent SQL injection.
+    $escaped_issue_id = mysqli_real_escape_string($mysql, $issue_id);
 
-  $sel = "issue_id = ?";
-  $selA = array($issue_id);
-  $sql = create_mysql_select($columns, $sel, $selA, "", "issue_id");
-  $res = mysqli_query($mysql, "select custom_data from crashes where issue_id='" . $issue_id . "'");
+    // --- THE FIX IS HERE ---
+    // Increase the group_concat_max_len for this session to prevent truncation.
+    // The default is often too small (1024 bytes). 102400 (100KB) should be safe.
+    mysqli_query($mysql, "SET SESSION group_concat_max_len = 102400;");
 
-  $result = array();
-  while ($row = mysqli_fetch_assoc($res)) {
-    $lines = explode("\n", $row['custom_data']);
-    if (count($lines) >= 2) {
-      $v = explode("=", $lines[0])[1];
-      $result['users'][$v] = 1;
-      $v = explode("=", $lines[1])[1];
-      $result['versions'][$v] = 1;
+    // This single query uses GROUP_CONCAT to get all unique users and versions
+    // as two comma-separated strings.
+    $sql = "
+        SELECT
+            GROUP_CONCAT(DISTINCT user_email) as users_list,
+            GROUP_CONCAT(DISTINCT android_version) as versions_list
+        FROM
+            crashes
+        WHERE
+            issue_id = '{$escaped_issue_id}'
+    ";
+
+    $res = mysqli_query($mysql, $sql);
+
+    $result = [
+        'users' => [],
+        'versions' => [],
+    ];
+
+    // Check if the query was successful and returned a row.
+    if ($res && mysqli_num_rows($res) > 0) {
+        $row = mysqli_fetch_assoc($res);
+
+        // Split the comma-separated strings into arrays.
+        // The array_fill_keys function is used to replicate the original
+        // function's output format of using keys for uniqueness.
+        if (!empty($row['users_list'])) {
+            $result['users'] = array_fill_keys(explode(',', $row['users_list']), 1);
+        }
+        if (!empty($row['versions_list'])) {
+            $result['versions'] = array_fill_keys(explode(',', $row['versions_list']), 1);
+        }
     }
-  }
 
-  return $result;
+    return $result;
 }
 
 function display_crashes($status, $onlyBeta = false) {
   global $mysql;
-  global $VERSION_RELEASE, $VERSION_RELEASE_FULL, $VERSION_FILTERED;
+  global $VERSION_RELEASE_FULL_A12, $VERSION_RELEASE_FULL;
   global $_GET, $package;
-  
-  $columns = array('id', /* 'status', */ 'MAX(added_date) as last_seen', 'COUNT(issue_id) as nb_errors', 
-    'COUNT(DISTINCT (installation_id)) as affected_users',
-    'issue_id',
-    'MAX(app_version_code) as version_code', /*'MAX(app_version_name) as version_name', 'package_name', */
-    // 'phone_model', 'android_version', 'brand', 'product',
-    'custom_data',
-    'stack_trace');
 
+  $appid = $_GET['app'];
+  $sql = "SELECT `appname`, `appid` FROM `app` WHERE `appid` = '$appid'";
+  $res = mysqli_query($mysql, $sql);
+  $rows = mysqli_num_rows($res);
+
+  $title = status_name($status);
+  if ($rows != 0) {
+    $tab = mysqli_fetch_assoc($res);
+    $title = $tab['appname'] . ", " . $title;
+  }
+  
+  $columns = array(
+      'id', 
+      'MAX(added_date) as last_seen', 
+      'COUNT(issue_id) as nb_errors', 
+      'COUNT(DISTINCT (custom_data)) as affected_users',
+      'issue_id',
+      'MAX(app_version_code) as version_code',
+      "GROUP_CONCAT(DISTINCT android_version SEPARATOR '<br/>') as android_versions",
+      'stack_trace'
+  );
   $sel = "status = ?";
   $selA = array($status);
 
@@ -362,8 +409,13 @@ function display_crashes($status, $onlyBeta = false) {
         $sel .= " AND custom_data NOT LIKE '%?%'";
         $selA[] = substr($arg, 1);
       } else {
-        $sel .= " AND custom_data LIKE '%?%'";
-        $selA[] = $arg;
+        if (isset($_GET['d'])) {
+          $sel .= " AND user_email = '?'";
+          $selA[] = $arg;
+        } else if (isset($_GET['ver'])) {
+          $sel .= " AND android_version = '?'";
+          $selA[] = $arg;
+        }
       }
     }
   }
@@ -375,9 +427,10 @@ function display_crashes($status, $onlyBeta = false) {
     if ($_GET['v']) {
       $order .= "nb_errors DESC, ";
     }
-    $order .= "version_code DESC, last_seen DESC";
+    $order .= "last_seen DESC";
   }
   $sql = create_mysql_select($columns, $sel, $selA, $order, "issue_id");
+
   $res = mysqli_query($mysql,$sql);
 
   if (!$res) {
@@ -390,7 +443,7 @@ function display_crashes($status, $onlyBeta = false) {
     return;
   }
 
-  echo "<h1 style='display: inline; margin-top: 40px'>".status_name($status)." reports (".mysqli_num_rows($res).")</h1>";
+  echo "<h1 style='display: inline; margin-top: 40px'>".$title." reports (".mysqli_num_rows($res).")</h1>";
 
 /*  echo "<button style='display: inline; float: right; height: 40px; padding: 10px;' onclick=\"location.href='group.php?appid=$_GET[app]'\" type='button'>
          PROCESS</button>";*/
@@ -408,12 +461,12 @@ function display_crashes($status, $onlyBeta = false) {
           $k = "exception";
         }
 
-        if ($k == "custom_data") {
+        if ($k == "android_versions") {
           //echo "<th>serial</th>\n";
-          echo "<th>build</th>\n";
+          echo "<th>versions</th>\n";
         }
 
-        if ($k == "version_code" || $k == "issue_id" || $k == "custom_data" || $k == "id" || $k == "affected_users")
+        if ($k == "version_code" || $k == "issue_id" || $k == "android_versions" || $k == "id" || $k == "affected_users")
           continue;
 
         if ($k == "last_seen") {
@@ -434,10 +487,10 @@ function display_crashes($status, $onlyBeta = false) {
     
     if ($onlyBeta) {
       $issue_id = $tab['issue_id'];
-      $r = mysqli_query($mysql, "SELECT COUNT(*) AS `count` FROM `crashes` WHERE `issue_id`='" . $issue_id . "' and custom_data LIKE '%" . $VERSION_RELEASE_FULL ."%'");
+      $r = mysqli_query($mysql, "SELECT COUNT(*) AS `count` FROM `crashes` WHERE `issue_id`='" . $issue_id . "' and (custom_data LIKE '%" . $VERSION_RELEASE_FULL_A12 ."%' or custom_data LIKE '%" . $VERSION_RELEASE_FULL ."%')");
       $row = mysqli_fetch_assoc($r);
       $count = $row['count'];
-//echo $issue_id . ": " . $count . " " . $VERSION_RELEASE_FULL ."<br/>";
+//echo $issue_id . ": " . $count . " " . $VERSION_RELEASE_FULL_A12 ."<br/>";
       if ($count > 0)
         continue;
     }   
@@ -452,7 +505,7 @@ function display_crashes($status, $onlyBeta = false) {
         //$idx = array_find('Caused by:', $lines);
         //$v = $lines[$idx];
         $value = "<div style='height:250px; overflow:hidden; word-wrap: break-word;'>";
-        $value .= "<a href='./report.php?issue_id=" .$tab['issue_id']. "'>";
+        $value .= "<a href='./report.php?issue_id=" .$tab['issue_id']. (isset($_GET['d']) ? "&report_id=" . $tab['id']: "") . "'>";
         /*if (array_find(": ", $lines) === FALSE && array_find(PACKAGE, $lines) === FALSE) {
           $value .= $lines[0];
         } else {*/
@@ -476,18 +529,8 @@ function display_crashes($status, $onlyBeta = false) {
         $value = date("d/M/Y G:i:s", $v);
       } else if ($k == "status") {
         $value = status_name($tab['status']);
-      } else if ($k == "custom_data") {
-        $lines = explode("\n", $v);
-        if (count($lines) == 0) {
-          echo "<td$style>none</td>\n";
-          //echo "<td$style>none</td>\n";
-        }  else if(count($lines) >= 2) {
-          //$v = explode("=", $lines[0])[1];
-          //echo "<td$style>$v</td>\n";
-          $v = explode("=", $lines[1])[1];
-          echo "<td$style>$v</td>\n";
-        }
-        
+      } else if ($k == "android_versions") {
+        echo "<td$style>$v</td>\n";        
         continue;
       } elseif ($k == "nb_errors") {
         $value = $v . " (" . $tab["affected_users"] . " users)";

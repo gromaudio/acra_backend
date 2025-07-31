@@ -375,16 +375,26 @@ $(document).ready(function(){
     	$array = array();
     	while( $row = mysqli_fetch_array($res)){
     		$array[] = $row['id']; // Inside while loop
-		}	
+	}	
 
-		echo "[ " . implode(",", $array) . "]" 
+	$position = 1;
+	if (isset($_GET['report_id'])) {
+		$position = array_search($_GET['report_id'], $array);
+		if ($position === false)
+			$position = 1;
+		else $position++;
+	}
+
+	
+
+	echo "[ " . implode(",", $array) . "]";
     ?>
     ,
     pageSize: 1,
     pageRange: 5,
     showGoInput: true,
     showGoButton: true,
-    pageNumber: 1,
+    pageNumber: <?php echo $position; ?>,
     position: 'top',
     formatNavigator: '<span style="color: #f00"><%= currentPage %></span> st/rd/th, <%= totalPage %> pages, <%= totalNumber %> entries',
     callback: function(data, pagination) {
@@ -401,7 +411,10 @@ $(document).ready(function(){
 });
 </script>
 
-
+<?php
+if (!isset($keepConnection))
+  mysqli_close($mysql);
+?>
 
 </body>
 </html>

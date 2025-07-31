@@ -145,7 +145,7 @@ div#chart1 {
 
 .rightreportcolumn {
 
-	width: 70%;
+	width: 100%;
 	margin-top: 20px;
 }
 
@@ -178,7 +178,7 @@ div#chart1 {
 }
 
 #wrapper {
-	width: 1024px;
+	width: 1280px;
 	margin: 0 auto;
 }
 

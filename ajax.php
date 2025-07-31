@@ -8,7 +8,16 @@ $obj = array();
 
 
 if ($_GET['action'] == "getreport") {
-	$sql = "select id, added_date, custom_data, application_log, logcat from crashes where id=" . intval($_GET['report_id']);
+	$sql = "SELECT 
+            c.id, 
+            c.issue_id, 
+            c.added_date, 
+            c.custom_data, 
+            d.application_log, 
+            d.logcat 
+        FROM crashes c
+        LEFT JOIN crash_detail d ON c.id = d.id
+        WHERE c.id = " . intval($_GET['report_id']);
 	$res = mysqli_query($mysql, $sql);
 	$tab = mysqli_fetch_assoc($res);
 
@@ -21,10 +30,12 @@ stack_trace
 application_log
 logcat*/
 
-	echo "<h1>Report #" . $tab['id'] ."</h1>\n";
+	echo "
+	<h1><a style='text-decoration:underline;' href='https://g-auth.net/mycar/acra/report.php?issue_id=" . $tab['issue_id'] . "&report_id=" . $tab['id'] . "'>Report #". $tab['id'] ."</a></h1>\n";
+	//<h1 onclick='navigator.clipboard.writeText();'>Report #" . $tab['id'] ."</h1>\n";
 	echo '<div style="margin: 45px;">'."\n";
 	foreach ($tab as $k => $v) {
-		if ($k == "id" || $v == null || $v == "none") {
+		if ($k == "id" || $v == null || $v == "none" || $k == "issue_id") {
 			continue;
 		} else if ($k == "added_date") {
 			if (intval($v) > 0) {

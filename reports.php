@@ -18,7 +18,7 @@ if(!isset($_SESSION)) {
 } 
 
 
-if (!isset($_GET['app'])) {
+if (!isset($_GET['app']) && !isset($_GET['q'])) {
 	echo "An error occurred! Back to <a href=\"index.php\">Dashboard</a>";
 	exit;
 
